@@ -1,0 +1,34 @@
+---
+title: Business Logic Template
+---
+
+# Business Logic Template
+
+## 📋 Business Logic Checklist
+
+When implementing business logic:
+
+- [ ] Configuration is stored in database, not hardcoded
+- [ ] Business rules are clearly defined and testable
+- [ ] Input validation covers both format and business constraints
+- [ ] State transitions are controlled and logged
+- [ ] Metrics are collected for key business events
+- [ ] External API integrations handle failures gracefully
+- [ ] Error handling provides meaningful business context
+- [ ] Business logic is separated from presentation layer
+- [ ] Performance impact is considered for complex rules
+- [ ] Documentation explains business reasoning behind rules
+
+## 🎯 Customization Notes
+
+Replace the example business logic above with your specific domain:
+
+- **Configuration**: Define your business settings and rules
+- **Validation**: Implement domain-specific validation rules
+- **Workflow**: Design state machines for your business processes
+- **Metrics**: Track KPIs relevant to your business
+- **Integration**: Connect with external services used in your domain
+- **Rules Engine**: Implement complex business logic patterns 
+- **Metrics**: Track KPIs relevant to your business
+- **Integration**: Connect with external services used in your domain
+- **Rules Engine**: Implement complex business logic patterns 

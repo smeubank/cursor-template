@@ -1,0 +1,284 @@
+# Project Context Template
+
+## 🎯 Project Overview
+
+**[Your Project Name]** is a modern web application built with Next.js, featuring [brief description of your project's purpose].
+
+### 🏗️ Repository Structure
+- **`/app`** - **CURRENT DEVELOPMENT** - Next.js App Router application (port 3000)
+- **`/admin`** - Admin dashboard (port 3001) [if applicable]
+- **`/api`** - API routes and server-side logic
+- **`/components`** - Reusable UI components
+- **`/lib`** - Utility functions and configuration
+
+### 🔧 Technology Stack
+- **Frontend:** Next.js 14+ (App Router), TypeScript, Tailwind CSS
+- **Backend:** [Your backend choice - Supabase, Prisma, etc.]
+- **UI Library:** [Your UI library - ShadCN/UI, Chakra UI, etc.]
+- **Monitoring:** [Your monitoring solution - Sentry, LogRocket, etc.]
+- **Deployment:** [Your deployment platform - Vercel, Netlify, etc.]
+
+## 📂 Documentation Structure
+
+### Core Implementation
+- **[`coding-guidelines.md`]** - TypeScript and Next.js standards
+- **[`business-logic.md`]** - Domain-specific business rules
+- **[`monitoring.md`]** - Error tracking and performance monitoring
+- **[`common-patterns.md`]** - Reusable code patterns
+
+### Development Workflow
+- **[`feature-development.md`]** - PRFAQ → PRD → Implementation → GTM workflow
+- **[`project/features/`]** - Feature templates and documentation
+  - **[`001-template/`]** - Master templates (PRFAQ, PRD, GTM, IMPLEMENTATION)
+  - **[`002-feature-name/`]** - Feature implementation examples
+  - **[`00X-feature-name/`]** - Your features (copy from template)
+
+## 🚀 Development Commands
+
+### Environment Setup
+```bash
+# Install dependencies
+npm install
+
+# Start development servers
+npm run dev              # Main app (port 3000)
+npm run dev:admin        # Admin dashboard (port 3001) [if applicable]
+```
+
+### Database Management
+```bash
+# Generate types
+npm run generate-types
+
+# Run migrations
+npm run migrate
+
+# Reset database
+npm run reset-db
+```
+
+### Monitoring & Debugging
+```bash
+# Check monitoring integration
+npm run monitor:check
+
+# View logs
+npm run logs
+
+# Performance analysis
+npm run analyze
+```
+
+## 🌟 Essential Environment Variables
+
+### Required for Development
+```env
+# Database
+DATABASE_URL=your_database_url
+DATABASE_ANON_KEY=your_anon_key
+
+# Authentication [if applicable]
+NEXTAUTH_URL=your_auth_url
+NEXTAUTH_SECRET=your_auth_secret
+
+# Monitoring
+SENTRY_DSN=your_sentry_dsn
+SENTRY_AUTH_TOKEN=your_sentry_auth_token
+
+# External Services [customize for your integrations]
+EXTERNAL_API_KEY=your_external_api_key
+```
+
+## 🎯 Development Priorities
+
+### Critical Constraints
+1. **Performance** - Optimize for Core Web Vitals and loading performance
+2. **Accessibility** - WCAG 2.1 AA compliance
+3. **Security** - Secure authentication and data handling
+4. **Monitoring** - Comprehensive error tracking and performance monitoring
+5. **Responsive Design** - Mobile-first approach
+
+### Current Focus Areas
+1. **User Experience** - Intuitive and accessible interface
+2. **Business Operations** - Core business logic and workflows
+3. **Admin Tools** - Management dashboard and controls
+4. **Analytics** - Data-driven insights and reporting
+
+## 📋 Feature Development Workflow
+
+### Process Overview
+1. **PRFAQ** - Define problem and solution (template: `001-template/PRFAQ.md`)
+2. **PRD** - Detailed requirements and specifications (template: `001-template/PRD.md`)
+3. **Implementation** - Build feature following coding guidelines
+4. **GTM** - Launch strategy and success measurement (template: `001-template/GTM.md`)
+
+### Creating New Features
+1. Copy `001-template/` to `00X-feature-name/`
+2. Fill out PRFAQ first to validate the concept
+3. Complete PRD with detailed requirements
+4. Implement following coding guidelines
+5. Execute GTM plan for launch
+
+### Feature Documentation Structure
+```
+.cursor/project/features/
+├── 001-template/          # Templates for new features
+│   ├── PRFAQ.md          # Problem definition and solution
+│   ├── PRD.md            # Product requirements document
+│   └── GTM.md            # Go-to-market strategy
+├── 002-feature-name/      # Example feature structure
+│   ├── PRFAQ.md
+│   ├── PRD.md
+│   └── GTM.md
+└── ...
+```
+
+## 🔧 Common Development Patterns
+
+### Database Access
+```typescript
+// Server components - direct database access
+const { data } = await database.from('table').select('*')
+
+// Client components - use hooks or API routes
+const { data } = useQuery('table', fetcher)
+```
+
+### Error Handling
+```typescript
+import { logError } from '@/lib/monitoring'
+
+try {
+  // operation
+} catch (error) {
+  logError(error, { component: 'ComponentName', context: data })
+}
+```
+
+### Business Logic Validation
+```typescript
+import { validateBusinessRules } from '@/lib/business-logic'
+
+if (!validateBusinessRules(requestData)) {
+  throw new Error('Business rule validation failed')
+}
+```
+
+## 📊 Key Business Logic
+
+### [Your Domain] System
+- **Dynamic Configuration** - Settings stored in database, configurable via admin
+- **Workflow Management** - State machine for process automation
+- **Validation Rules** - Both client and server-side validation
+
+### [Your Feature] System
+- **Data Processing** - Real-time data handling and validation
+- **Integration Management** - External API connections
+- **Notification System** - Automated alerts and confirmations
+
+### [Your Process] Management
+- **Form Validation** - Comprehensive input validation
+- **Error Prevention** - Proactive error handling
+- **Response Tracking** - Admin tools for managing workflows
+
+## 🎨 Design System
+
+### Color Palette (Customize)
+- **Primary:** [Your primary color] (#your-hex-code)
+- **Secondary:** [Your secondary color] (#your-hex-code)
+- **Accent:** [Your accent color] (#your-hex-code)
+- **Neutral:** [Your neutral color] (#your-hex-code)
+
+### Typography
+- **Headings:** [Your heading font]
+- **Body:** [Your body font]
+- **Code:** [Your monospace font]
+
+### Component Library
+- **Base Components** - Consistent component architecture
+- **Custom Components** - Domain-specific themed components
+- **Responsive Design** - Mobile-first approach
+
+## 📈 Analytics & Monitoring
+
+### Monitoring Integration
+- **Error Tracking** - All errors logged with context
+- **Performance Monitoring** - Core Web Vitals and custom metrics
+- **User Experience** - Session replay for critical workflows
+
+### Business Metrics
+- **Conversion Tracking** - Key business process completion rates
+- **User Engagement** - Time on site, interactions, retention
+- **Performance Indicators** - Domain-specific KPIs
+
+## 🔗 External References
+
+### Documentation
+- [Next.js Documentation](https://nextjs.org/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+- [Your Database Documentation](https://your-db-docs.com)
+- [Your UI Library Documentation](https://your-ui-docs.com)
+
+### Business Context
+- **Target Audience:** [Your target users]
+- **Key Use Cases:** [Your primary use cases]
+- **Success Metrics:** [Your success criteria]
+
+---
+
+> 💡 **Getting Started**: Read this document first, then dive into specific guides based on your task. For feature development, start with the templates in `project/features/001-template/`.
+
+## ⚡ Quick Commands
+
+### Development
+```bash
+# Start development
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm run test
+```
+
+### Database
+```bash
+# Local development
+npm run db:start
+npm run db:reset
+```
+
+### Deployment
+```bash
+# Deploy to production
+npm run deploy
+```
+
+## 🎯 Customization Instructions
+
+### Replace Throughout This Template:
+- `[Your Project Name]` - Your actual project name
+- `[Your backend choice]` - Your database/backend solution
+- `[Your UI library]` - Your component library
+- `[Your monitoring solution]` - Your error tracking service
+- `[Your deployment platform]` - Your hosting platform
+- `[Your Domain]` - Your business domain
+- `[Your Feature]` - Your key features
+- `[Your Process]` - Your business processes
+- `[Your primary color]` - Your brand colors
+- `[Your target users]` - Your user base
+- `[Your primary use cases]` - Your main functionality
+- `[Your success criteria]` - Your success metrics
+
+### Update Environment Variables:
+- Replace database configuration
+- Update authentication settings
+- Modify monitoring configuration
+- Add your external API keys
+
+### Customize Business Logic:
+- Replace generic business rules with your domain logic
+- Update validation schemas
+- Modify workflow processes
+- Adapt metrics collection 

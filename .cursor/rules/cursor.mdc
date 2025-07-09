@@ -1,0 +1,284 @@
+---
+alwaysApply: true
+---
+
+# Project Template - Navigation & Overview
+
+## 🎯 Project Overview
+
+**[Your Project Name]** is a modern web application built with Next.js, featuring [brief description of your main functionality and purpose].
+
+### 🏗️ Repository Structure
+- **`/app`** - **CURRENT DEVELOPMENT** - Next.js App Router application (port 3000)
+- **`/admin`** - Admin dashboard (port 3001) [if applicable]
+- **`/api`** - API routes and backend services
+- **`/components`** - Reusable UI components
+- **`/lib`** - Utility functions and configurations
+
+### 🔧 Technology Stack
+- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS
+- **Backend:** [Your backend choice - Supabase, Prisma, etc.]
+- **UI Library:** ShadCN/UI components
+- **Monitoring:** Sentry with MCP integration
+- **Deployment:** Vercel
+
+## 📂 Documentation Structure
+
+### Core Architecture & Implementation
+- **[`architecture.mdc`](mdc:architecture.mdc)** - System design and technical decisions
+- **[`common-patterns.mdc`](mdc:common-patterns.mdc)** - Reusable code patterns
+- **[`coding-guidelines.mdc`](mdc:coding-guidelines.mdc)** - TypeScript and Next.js standards
+- **[`monitoring.mdc`](mdc:monitoring.mdc)** - Sentry integration and logging
+- **[`business-logic.mdc`](mdc:business-logic.mdc)** - Domain-specific business rules
+
+### Feature Development Workflow
+- **[`feature-development.mdc`](mdc:feature-development.mdc)** - **CRITICAL:** PRFAQ → PRD → GTM → Implementation workflow
+- **[`project/features/`](mdc:.cursor/project/features)** - Feature templates and documentation
+  - **[`001-template/`](mdc:.cursor/project/features/001-template)** - Master templates (PRFAQ, PRD, GTM, IMPLEMENTATION)
+  - **[`002-example-feature/`](mdc:.cursor/project/features/002-example-feature)** - ✅ **EXAMPLE:** Complete feature workflow
+  - **[`00X-feature-name/`]** - Your next feature (copy from template)
+
+**Quick Start for New Features:**
+```bash
+cp -r .cursor/project/features/001-template .cursor/project/features/00X-feature-name
+```
+
+**Workflow:** PRFAQ (validate problem) → PRD (define requirements) → GTM (plan launch) → IMPLEMENTATION (build & deploy)
+
+### Project Documentation
+- **[`project/`](mdc:.cursor/project)** - Organized project documentation
+  - **[`project/domain/`](mdc:.cursor/project/domain)** - Domain-specific documentation
+  - **[`project/admin/`](mdc:.cursor/project/admin)** - Admin system documentation
+  - **[`project/features/`](mdc:.cursor/project/features)** - Feature development with numbered folders
+
+### Meta Documentation
+- **[`llms/documentation-style-guide.mdc`](mdc:llms/documentation-style-guide.mdc)** - Writing standards
+- **[`llms/document-scopes.mdc`](mdc:llms/document-scopes.mdc)** - File organization principles
+
+## 🚀 Development Commands
+
+### Environment Setup
+```bash
+# Install dependencies
+npm install
+
+# Start development servers
+npm run dev           # Main application (port 3000)
+npm run dev:admin     # Admin dashboard (port 3001) [if applicable]
+```
+
+### Database Management
+```bash
+# Generate types
+npm run generate-types
+
+# Run migrations
+npm run migrate
+
+# Reset database
+npm run reset-db
+```
+
+### Monitoring & Debugging
+```bash
+# Check Sentry integration
+npm run sentry:check
+
+# View logs
+npm run logs
+
+# Performance analysis
+npm run analyze
+```
+
+## 🌟 Essential Environment Variables
+
+### Required for Development
+```env
+# Database
+NEXT_PUBLIC_SUPABASE_URL=your_database_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Monitoring
+SENTRY_DSN=your_sentry_dsn
+SENTRY_AUTH_TOKEN=your_sentry_auth_token
+
+# External Integrations
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+## 🎯 Development Priorities
+
+### Critical Constraints
+1. **Database Sleep State** - Always handle database waking up gracefully
+2. **Comprehensive Monitoring** - Log all user actions and errors to Sentry
+3. **Responsive Design** - Mobile-first approach with brand-appropriate styling
+4. **Performance** - Optimize for Core Web Vitals and loading performance
+
+### Current Focus Areas
+1. **User Experience** - Seamless workflows and clear information architecture
+2. **Business Operations** - Configurable settings and automated workflows
+3. **Admin Tools** - Comprehensive management dashboard
+4. **Analytics** - Data-driven insights for business operations
+
+## 📋 Feature Development Workflow
+
+### Process Overview
+1. **PRFAQ** - Define problem and solution (template: `001-template/PRFAQ.md`)
+2. **PRD** - Detailed requirements and specifications (template: `001-template/PRD.md`)
+3. **Implementation** - Build feature following coding guidelines
+4. **GTM** - Launch strategy and success measurement (template: `001-template/GTM.md`)
+
+### Creating New Features
+1. Copy `001-template/` to `00X-feature-name/`
+2. Fill out PRFAQ first to validate the concept
+3. Complete PRD with detailed requirements
+4. Implement following coding guidelines
+5. Execute GTM plan for launch
+
+### Feature Documentation Structure
+```
+.cursor/project/features/
+├── 001-template/          # Templates for new features
+│   ├── PRFAQ.md          # Problem definition and solution
+│   ├── PRD.md            # Product requirements document
+│   └── GTM.md            # Go-to-market strategy
+├── 002-feature-name/      # Example feature structure
+│   ├── PRFAQ.md
+│   ├── PRD.md
+│   └── GTM.md
+└── ...
+```
+
+## 🔧 Common Development Patterns
+
+### Database Access
+```typescript
+// Server components - direct database access
+const { data } = await supabase.from('table').select('*')
+
+// Client components - use hooks
+const { data } = useSupabaseQuery('table', 'select')
+```
+
+### Error Handling
+```typescript
+import { logError } from '@/lib/sentry'
+
+try {
+  // operation
+} catch (error) {
+  logError(error, { component: 'ComponentName', context: data })
+}
+```
+
+### Business Hours Validation
+```typescript
+import { isWithinBusinessHours } from '@/lib/business-hours'
+
+if (!isWithinBusinessHours(requestedTime)) {
+  throw new Error('Outside business hours')
+}
+```
+
+## 📊 Key Business Logic
+
+### Business Hours System
+- **Dynamic Configuration** - Hours stored in database, configurable per day
+- **Holiday Management** - Special dates with custom hours or closures
+- **Service Availability** - Different services may have different hours
+
+### Booking System
+- **Availability Checking** - Real-time calendar integration
+- **Conflict Resolution** - Prevent double bookings
+- **Notification System** - Email confirmations and reminders
+
+### Contact Management
+- **Form Validation** - Comprehensive client and server validation
+- **Spam Prevention** - Rate limiting and content filtering
+- **Response Tracking** - Admin tools for managing inquiries
+
+## 🎨 Design System
+
+### Color Palette
+- **Primary:** Brand primary color
+- **Secondary:** Supporting brand colors
+- **Accent:** Highlight color
+- **Neutral:** Grays and background colors
+
+### Typography
+- **Headings:** Clean, readable fonts
+- **Body:** Optimized for readability
+- **Brand Character:** [Your brand personality - professional, friendly, etc.]
+
+### Component Library
+- **ShadCN/UI Base** - Consistent component architecture
+- **Brand Customizations** - Themed components for your context
+- **Responsive Design** - Mobile-first approach
+
+## 📈 Analytics & Monitoring
+
+### Sentry Integration
+- **Error Tracking** - All errors logged with context
+- **Performance Monitoring** - Core Web Vitals and custom metrics
+- **User Experience** - Session replay for critical workflows
+
+### Business Metrics
+- **Conversion Tracking** - Track goal completion rates
+- **User Engagement** - Time on site, page views, interactions
+- **Operational Efficiency** - Admin task completion, response times
+
+## 🔗 External References
+
+### Documentation
+- [Next.js Documentation](mdc:https:/nextjs.org/docs)
+- [Database Documentation](mdc:https:/supabase.com/docs)
+- [Sentry Documentation](mdc:https:/docs.sentry.io)
+- [ShadCN/UI Documentation](mdc:https:/ui.shadcn.com)
+
+### Business Context
+- **Target Audience:** [Your target users]
+- **Peak Usage Times:** [When your application gets most traffic]
+- **Services:** [What your application provides]
+
+---
+
+> 💡 **Getting Started**: Read this document first, then dive into specific guides based on your task. For feature development, start with the templates in `project/features/001-template/`.
+
+## ⚡ Quick Commands
+
+### Development
+```bash
+# Start development server
+npm run dev                   # Main application (port 3000)
+npm run dev:admin            # Admin portal (port 3001) [if applicable]
+
+# Feature development workflow
+cp -r .cursor/project/features/001-template .cursor/project/features/00X-feature-name
+```
+
+### Database
+```bash
+# Local development
+npx supabase start
+npx supabase db reset
+```
+
+### Deployment
+```bash
+# Deploy to production
+vercel --prod
+```
+
+### API Research (Critical)
+```bash
+# ⚠️ ALWAYS verify API availability before technical planning
+# Research API availability, pricing, and limitations before implementation
+```
+
+```bash
+# ⚠️ ALWAYS verify API availability before technical planning
+# Example: Venmo API retired for new businesses - research prevented implementation issues
+```

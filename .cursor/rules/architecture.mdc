@@ -1,0 +1,186 @@
+---
+alwaysApply: true
+---
+
+# Project Architecture
+
+## 🏗️ Repository Structure
+
+```
+project-template/
+├── .cursor/                 # AI assistant configuration
+│   ├── rules/              # Core rules and patterns
+│   └── project/            # Project-specific documentation
+├── app/                    # Next.js App Router application
+│   ├── (public)/          # Public routes
+│   ├── (admin)/           # Admin routes [if applicable]
+│   ├── api/               # API routes
+│   ├── globals.css        # Global styles
+│   └── layout.tsx         # Root layout
+├── components/             # Reusable UI components
+│   ├── ui/                # Base UI components (ShadCN/UI)
+│   └── business/          # Domain-specific components
+├── lib/                   # Utility functions and configurations
+│   ├── database.ts        # Database client configuration
+│   ├── auth.ts           # Authentication utilities
+│   ├── validation.ts     # Form validation schemas
+│   └── utils.ts          # General utilities
+├── types/                 # TypeScript type definitions
+├── public/               # Static assets
+└── docs/                # Additional documentation
+```
+
+## 🎯 Design Principles
+
+### Separation of Concerns
+- **App Router** for routing and page structure
+- **Components** for reusable UI elements
+- **Lib** for business logic and utilities
+- **Types** for TypeScript definitions
+
+### Performance First
+- Server Components by default
+- Client Components only when necessary
+- Image optimization with Next.js
+- **Tailwind CSS** with custom brand color palette
+- Code splitting and lazy loading
+
+### Monitoring & Observability
+- **Sentry** for error tracking and performance monitoring
+- Structured logging throughout the application
+- User journey tracking and analytics
+
+## 🏢 Application Architecture
+
+### Customer Site (`/app`)
+**Purpose:** Main user-facing application
+**Technology:** Next.js 15 App Router
+**Port:** 3000
+
+**Key Features:**
+- Public pages and user interface
+- User authentication and profiles
+- Business functionality (booking, contact, etc.)
+- Responsive design for all devices
+
+### Admin Dashboard (`/admin`) [If Applicable]
+**Purpose:** Administrative interface
+**Technology:** Next.js 15 App Router
+**Port:** 3001
+
+**Key Features:**
+- Admin authentication and role management
+- Business configuration and settings
+- User management and analytics
+- Content management system
+
+## 🚀 Development Workflow
+
+### Current Development Status
+1. **Feature development** in `/app`
+2. **Admin portal** in `/admin` [if applicable]
+3. **API routes** in `/app/api`
+4. **Component library** in `/components`
+
+### Development Priorities
+- ✅ **app**: Active development (main application)
+- 🚧 **admin**: Admin tools and management interface
+- 📋 **api**: Backend services and integrations
+
+### Code Organization
+- **Components** are organized by domain and reusability
+- **Pages** follow Next.js App Router conventions
+- **API routes** are grouped by functionality
+- **Types** are centralized for consistency
+
+## 🔧 Technology Stack
+
+### Frontend Framework
+- **Next.js 15** with App Router and TypeScript
+- **React 18** with Server and Client Components
+- **Tailwind CSS** for styling and responsive design
+
+### Backend & Database
+- **Database** (Supabase, Prisma, or similar)
+- **Authentication** integrated with database solution
+- **File Storage** for uploads and assets
+
+### Integrations
+- **Booking Integration:** Calendar and scheduling APIs
+- **Email Service:** Transactional email delivery
+- **Analytics:** User behavior and business metrics
+- **Newsletter:** User communications and updates
+
+### Development Tools
+- **TypeScript** for type safety
+- **ESLint & Prettier** for code quality
+- **Sentry** for monitoring and error tracking
+- **Vercel** for deployment and hosting
+
+## 📊 Data Architecture
+
+### Database Schema
+- **Users** - Authentication and profile management
+- **Business Configuration** - Settings and operational data
+- **Bookings** - Appointment and reservation system
+- **Content** - CMS and dynamic content management
+
+### API Design
+- **REST APIs** for standard CRUD operations
+- **Real-time subscriptions** for live updates
+- **Webhook endpoints** for external integrations
+- **File upload** handling and processing
+
+## 🔐 Security Architecture
+
+### Authentication & Authorization
+- **Multi-factor authentication** for admin users
+- **Role-based access control** throughout the system
+- **Session management** with secure tokens
+- **Password policies** and security requirements
+
+### Data Protection
+- **Input validation** on all user inputs
+- **SQL injection prevention** with parameterized queries
+- **CSRF protection** on state-changing operations
+- **Rate limiting** to prevent abuse
+
+## 📱 Performance Architecture
+
+### Optimization Strategies
+- **Server-side rendering** for fast initial loads
+- **Static generation** for cacheable content
+- **Image optimization** with Next.js Image component
+- **Code splitting** for efficient bundle sizes
+
+### Monitoring & Analytics
+- **Core Web Vitals** tracking and optimization
+- **Error tracking** with contextual information
+- **Performance monitoring** across all user journeys
+- **Business metrics** for operational insights
+
+## 🚀 Deployment Architecture
+
+### Environment Strategy
+- **Development** - Local development with hot reload
+- **Staging** - Production-like environment for testing
+- **Production** - Live application with full monitoring
+
+### CI/CD Pipeline
+- **Automated testing** on pull requests
+- **Build verification** before deployment
+- **Deployment automation** with rollback capabilities
+- **Environment promotion** workflow
+
+### Infrastructure
+- **Vercel** hosting with edge optimization
+- **CDN** for static asset delivery
+- **Database** with automated backups
+- **Monitoring** with alert systems
+
+---
+
+> 💡 **Note:** This architecture is designed to be scalable, maintainable, and optimized for both developer experience and user performance. Each component can be developed and deployed independently while maintaining system cohesion.
+
+
+## 🏗️ Data Architecture

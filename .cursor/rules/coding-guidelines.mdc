@@ -1,0 +1,454 @@
+---
+alwaysApply: true
+---
+
+# Coding Guidelines
+
+## 🎯 Core Principles
+
+1. **TypeScript First**: All code must be TypeScript with strict type checking
+2. **Server Components Default**: Use Server Components unless interactivity is required
+3. **Error Boundaries**: Every route and major component must handle errors gracefully
+4. **Performance**: Optimize for Core Web Vitals and user experience
+5. **Accessibility**: Follow WCAG 2.1 AA standards
+
+## 📝 TypeScript Standards
+
+### Type Definitions
+```typescript
+// types/index.ts
+export interface BusinessHour {
+  id: number
+  day_of_week: number
+  open_time: string
+  close_time: string
+  is_open: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BookingRequest {
+  name: string
+  email: string
+  phone: string
+  service: string
+  preferred_date: string
+  message?: string
+}
+
+export type BookingResponse = {
+  id: number
+  status: 'pending' | 'confirmed' | 'cancelled'
+  created_at: string
+} & BookingRequest
+```
+
+### Strict Configuration
+```typescript
+// tsconfig.json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true
+  }
+}
+```
+
+## 🏗️ Next.js App Router Standards
+
+### File Organization
+```
+app/
+├── (public)/           # Public routes group
+│   ├── page.tsx        # Homepage
+│   ├── about/
+│   └── contact/
+├── (admin)/            # Admin routes group
+│   ├── dashboard/
+│   └── settings/
+├── api/                # API routes
+├── globals.css         # Global styles
+└── layout.tsx          # Root layout
+```
+
+### Route Conventions
+- **Server Components**: Default for data fetching and static content
+- **Client Components**: Use `'use client'` only when needed
+- **Loading States**: `loading.tsx` for each route segment
+- **Error Boundaries**: `error.tsx` for each route segment
+- **Not Found**: `not-found.tsx` for 404 handling
+
+### Metadata Standards
+```typescript
+// app/page.tsx
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: '[Your Project Name] - [Tagline]',
+  description: '[Your project description and value proposition]',
+  openGraph: {
+    title: '[Your Project Name]',
+    description: '[Brief project description]',
+    type: 'website',
+    locale: 'en_US',
+  },
+}
+```
+
+## 🗃️ Database Standards
+
+### Client Configuration
+```typescript
+// lib/database.ts
+import { createClient } from '@supabase/supabase-js'
+import { Database } from '@/types/database'
+
+export const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+    },
+  }
+)
+```
+
+### Query Patterns
+```typescript
+// Always handle errors explicitly
+const { data, error } = await supabase
+  .from('business_hours')
+  .select('*')
+  .order('day_of_week')
+
+if (error) {
+  console.error('Database error:', error)
+  throw new Error(`Failed to fetch business hours: ${error.message}`)
+}
+
+// Use type-safe queries
+const { data: businessHours } = await supabase
+  .from('business_hours')
+  .select('id, day_of_week, open_time, close_time, is_open')
+  .returns<BusinessHour[]>()
+```
+
+### RLS (Row Level Security)
+```sql
+-- Enable RLS on all tables
+ALTER TABLE business_hours ENABLE ROW LEVEL SECURITY;
+
+-- Admin access policy
+CREATE POLICY "Admin full access" ON business_hours
+  FOR ALL USING (auth.jwt()->>'role' = 'admin');
+
+-- Public read access
+CREATE POLICY "Public read access" ON business_hours
+  FOR SELECT USING (true);
+```
+
+## 🎨 Component Standards
+
+### Server Component Pattern
+```typescript
+// app/about/page.tsx
+import { supabase } from '@/lib/database'
+import { BusinessHours } from '@/components/BusinessHours'
+
+export default async function AboutPage() {
+  const { data: hours } = await supabase
+    .from('business_hours')
+    .select('*')
+    .order('day_of_week')
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">About Our Business</h1>
+      <BusinessHours hours={hours} />
+    </div>
+  )
+}
+```
+
+### Client Component Pattern
+```typescript
+// components/ContactForm.tsx
+'use client'
+
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { logError } from '@/lib/logging'
+
+export function ContactForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      // Form submission logic
+      setMessage('Thank you for your message!')
+    } catch (error) {
+      logError(error as Error, { component: 'ContactForm', action: 'submit' })
+      setMessage('Sorry, something went wrong. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Form fields */}
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? 'Sending...' : 'Send Message'}
+      </Button>
+      {message && <p className="text-sm text-green-600">{message}</p>}
+    </form>
+  )
+}
+```
+
+## 🎯 Error Handling Standards
+
+### Error Boundary Setup
+```typescript
+// components/ErrorBoundary.tsx
+'use client'
+
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
+import { Button } from '@/components/ui/button'
+
+export default function ErrorBoundary({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: {
+        component: 'ErrorBoundary',
+        digest: error.digest,
+      },
+    })
+  }, [error])
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+      <div className="text-center space-y-4">
+        <h2 className="text-2xl font-semibold text-red-600">
+          Oops! Something went wrong
+        </h2>
+        <p className="text-gray-600 max-w-md">
+          We've been notified about this issue and are working to fix it.
+        </p>
+        <Button onClick={reset} variant="outline">
+          Try Again
+        </Button>
+      </div>
+    </div>
+  )
+}
+```
+
+### API Error Handling
+```typescript
+// app/api/contact/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { logError } from '@/lib/logging'
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Validate request
+    if (!body.email || !body.message) {
+      return NextResponse.json(
+        { error: 'Email and message are required' },
+        { status: 400 }
+      )
+    }
+
+    // Process request
+    const result = await processContact(body)
+    
+    return NextResponse.json(result, { status: 200 })
+  } catch (error) {
+    logError(error as Error, { 
+      component: 'ContactAPI', 
+      action: 'POST',
+      request: request.url 
+    })
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+## 🎨 Styling Standards
+
+### Tailwind CSS Organization
+```typescript
+// lib/utils.ts
+import { type ClassValue, clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+// Component styling pattern
+export function HeroSection() {
+  return (
+    <section className={cn(
+      'relative px-4 py-12 md:py-24 lg:py-32',
+      'bg-gradient-to-br from-green-50 to-blue-50',
+      'text-center'
+    )}>
+      {/* Content */}
+    </section>
+  )
+}
+```
+
+### Brand Color Palette
+```typescript
+// tailwind.config.ts
+export default {
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          primary: '#22c55e',
+          secondary: '#8b4513',
+          accent: '#f5deb3',
+          neutral: '#87ceeb',
+        },
+      },
+    },
+  },
+}
+```
+
+## 📊 Performance Standards
+
+### Image Optimization
+```typescript
+// components/OptimizedImage.tsx
+import Image from 'next/image'
+
+interface OptimizedImageProps {
+  src: string
+  alt: string
+  width: number
+  height: number
+  priority?: boolean
+  className?: string
+}
+
+export function OptimizedImage({ 
+  src, 
+  alt, 
+  width, 
+  height, 
+  priority = false, 
+  className = '' 
+}: OptimizedImageProps) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      priority={priority}
+      className={className}
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      placeholder="blur"
+      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A8A8A8A8A8A8A8A8A8A=="
+    />
+  )
+}
+```
+
+### Code Splitting
+```typescript
+// Use dynamic imports for heavy components
+import dynamic from 'next/dynamic'
+
+const HeavyChart = dynamic(() => import('@/components/HeavyChart'), {
+  loading: () => <div>Loading chart...</div>,
+  ssr: false,
+})
+
+// Lazy load non-critical components
+const ContactForm = dynamic(() => import('@/components/ContactForm'), {
+  loading: () => <div>Loading form...</div>,
+})
+```
+
+## 🔒 Security Standards
+
+### Environment Variables
+```typescript
+// lib/env.ts
+import { z } from 'zod'
+
+const envSchema = z.object({
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string(),
+  SENTRY_DSN: z.string().url(),
+  SENTRY_AUTH_TOKEN: z.string(),
+})
+
+export const env = envSchema.parse(process.env)
+```
+
+### Input Validation
+```typescript
+// lib/validation.ts
+import { z } from 'zod'
+
+export const contactSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional(),
+  message: z.string().min(10, 'Message must be at least 10 characters'),
+})
+
+export type ContactFormData = z.infer<typeof contactSchema>
+```
+
+## 📋 Quality Checklist
+
+Before submitting code, ensure:
+
+- [ ] All TypeScript types are properly defined
+- [ ] Error boundaries are implemented
+- [ ] Errors are logged to Sentry with context
+- [ ] Database queries handle errors gracefully
+- [ ] Components are responsive and accessible
+- [ ] Images are optimized with Next.js Image
+- [ ] Forms include validation and error messages
+- [ ] Environment variables are validated
+- [ ] Code is formatted with Prettier
+- [ ] Linting passes without errors
+
+- [ ] Forms include validation and error messages
+- [ ] Environment variables are validated
+- [ ] Code is formatted with Prettier
+- [ ] Linting passes without errors

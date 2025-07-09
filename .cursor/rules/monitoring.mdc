@@ -1,0 +1,450 @@
+# Monitoring & Observability
+
+## 🎯 Monitoring Strategy
+
+Comprehensive error tracking and performance monitoring using Sentry with structured logging for both customer and admin experiences.
+
+## 🔧 Sentry Configuration
+
+### Setup
+```typescript
+// sentry.client.config.ts
+import * as Sentry from '@sentry/nextjs'
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 1.0,
+  debug: false,
+  integrations: [
+    Sentry.browserTracingIntegration(),
+  ],
+  beforeSend(event, hint) {
+    // Filter out non-critical errors
+    if (event.exception) {
+      const error = hint.originalException
+      if (error && error.message?.includes('Network Error')) {
+        return null // Don't send network errors
+      }
+    }
+    return event
+  },
+})
+```
+
+### Server Configuration
+```typescript
+// sentry.server.config.ts
+import * as Sentry from '@sentry/nextjs'
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 1.0,
+  debug: false,
+  integrations: [
+    Sentry.prismaIntegration(),
+  ],
+})
+```
+
+## 📊 Structured Logging Patterns
+
+### Core Logging Utility
+```typescript
+// lib/logging.ts
+import * as Sentry from '@sentry/nextjs'
+
+export interface LogContext {
+  component: string
+  action: string
+  userId?: string
+  businessId?: string
+  bookingId?: string
+  [key: string]: any
+}
+
+export function logError(error: Error, context: LogContext) {
+  Sentry.captureException(error, {
+    tags: {
+      component: context.component,
+      action: context.action,
+      severity: 'error',
+    },
+    extra: {
+      ...context,
+      timestamp: new Date().toISOString(),
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+    },
+  })
+}
+
+export function logInfo(message: string, context: LogContext) {
+  Sentry.addBreadcrumb({
+    message,
+    level: 'info',
+    category: context.component,
+    data: context,
+  })
+}
+
+export function logWarning(message: string, context: LogContext) {
+  Sentry.captureMessage(message, {
+    level: 'warning',
+    tags: {
+      component: context.component,
+      action: context.action,
+    },
+    extra: context,
+  })
+}
+```
+
+### Business Logic Logging
+```typescript
+// lib/business-hours.ts
+import { logInfo, logWarning } from '@/lib/logging'
+
+export async function getBusinessHours(): Promise<BusinessHour[]> {
+  const startTime = Date.now()
+  
+  try {
+    const { data, error } = await supabase
+      .from('business_hours')
+      .select('*')
+      .order('day_of_week')
+    
+    if (error) {
+      logError(error, {
+        component: 'BusinessHours',
+        action: 'fetch',
+        duration: Date.now() - startTime,
+      })
+      throw error
+    }
+    
+    logInfo('Business hours fetched successfully', {
+      component: 'BusinessHours',
+      action: 'fetch',
+      duration: Date.now() - startTime,
+      recordCount: data?.length || 0,
+    })
+    
+    return data || []
+  } catch (error) {
+    logError(error as Error, {
+      component: 'BusinessHours',
+      action: 'fetch',
+      duration: Date.now() - startTime,
+    })
+    throw error
+  }
+}
+```
+
+## 🎯 Performance Monitoring
+
+### Core Web Vitals Tracking
+```typescript
+// lib/performance.ts
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+import * as Sentry from '@sentry/nextjs'
+
+export function initPerformanceMonitoring() {
+  getCLS(metric => {
+    Sentry.setMeasurement('CLS', metric.value, 'ratio')
+  })
+  
+  getFID(metric => {
+    Sentry.setMeasurement('FID', metric.value, 'millisecond')
+  })
+  
+  getFCP(metric => {
+    Sentry.setMeasurement('FCP', metric.value, 'millisecond')
+  })
+  
+  getLCP(metric => {
+    Sentry.setMeasurement('LCP', metric.value, 'millisecond')
+  })
+  
+  getTTFB(metric => {
+    Sentry.setMeasurement('TTFB', metric.value, 'millisecond')
+  })
+}
+```
+
+### Database Performance Monitoring
+```typescript
+// lib/database-monitoring.ts
+import { logInfo, logWarning } from '@/lib/logging'
+
+export async function monitoredQuery<T>(
+  queryFn: () => Promise<T>,
+  context: { component: string; action: string }
+): Promise<T> {
+  const startTime = Date.now()
+  
+  try {
+    const result = await queryFn()
+    const duration = Date.now() - startTime
+    
+    if (duration > 1000) {
+      logWarning('Slow database query detected', {
+        ...context,
+        duration,
+      })
+    } else {
+      logInfo('Database query completed', {
+        ...context,
+        duration,
+      })
+    }
+    
+    return result
+  } catch (error) {
+    logError(error as Error, {
+      ...context,
+      duration: Date.now() - startTime,
+    })
+    throw error
+  }
+}
+```
+
+## 🚨 Error Tracking
+
+### React Error Boundaries
+```typescript
+// components/ErrorBoundary.tsx
+'use client'
+
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
+import { Button } from '@/components/ui/button'
+
+interface ErrorBoundaryProps {
+  error: Error & { digest?: string }
+  reset: () => void
+}
+
+export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: {
+        component: 'ErrorBoundary',
+        digest: error.digest,
+        errorType: 'react-error-boundary',
+      },
+      extra: {
+        componentStack: error.stack,
+        timestamp: new Date().toISOString(),
+      },
+    })
+  }, [error])
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+      <div className="text-center space-y-4">
+        <h2 className="text-2xl font-semibold text-red-600">
+          Something went wrong
+        </h2>
+        <p className="text-gray-600 max-w-md">
+          We've been notified about this issue and are working to fix it.
+        </p>
+        <Button onClick={reset} variant="outline">
+          Try Again
+        </Button>
+      </div>
+    </div>
+  )
+}
+```
+
+### API Error Monitoring
+```typescript
+// app/api/contact/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { logError, logInfo } from '@/lib/logging'
+
+export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
+  try {
+    const body = await request.json()
+    
+    // Log API request
+    logInfo('Contact form submission started', {
+      component: 'ContactAPI',
+      action: 'POST',
+      hasEmail: !!body.email,
+      hasMessage: !!body.message,
+    })
+    
+    // Process request
+    const result = await processContact(body)
+    
+    // Log success
+    logInfo('Contact form submission completed', {
+      component: 'ContactAPI',
+      action: 'POST',
+      duration: Date.now() - startTime,
+      success: true,
+    })
+    
+    return NextResponse.json(result, { status: 200 })
+  } catch (error) {
+    logError(error as Error, {
+      component: 'ContactAPI',
+      action: 'POST',
+      duration: Date.now() - startTime,
+      url: request.url,
+    })
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+## 📈 User Experience Monitoring
+
+### User Journey Tracking
+```typescript
+// lib/analytics.ts
+import * as Sentry from '@sentry/nextjs'
+
+export function trackUserJourney(event: string, data: Record<string, any>) {
+  Sentry.addBreadcrumb({
+    message: event,
+    level: 'info',
+    category: 'user-journey',
+    data: {
+      ...data,
+      timestamp: new Date().toISOString(),
+    },
+  })
+}
+
+// Usage in components
+export function ContactForm() {
+  const handleSubmit = async (formData: ContactFormData) => {
+    trackUserJourney('Contact form submitted', {
+      hasPhone: !!formData.phone,
+      messageLength: formData.message.length,
+    })
+    
+    // Form submission logic
+  }
+}
+```
+
+### Business-Specific Metrics
+```typescript
+// lib/business-metrics.ts
+import { logInfo } from '@/lib/logging'
+
+export function trackBookingAttempt(bookingData: {
+  service: string
+  preferredDate: string
+  isBusinessHours: boolean
+}) {
+  logInfo('Booking attempt', {
+    component: 'BookingSystem',
+    action: 'attempt',
+    service: bookingData.service,
+    dayOfWeek: new Date(bookingData.preferredDate).getDay(),
+    isBusinessHours: bookingData.isBusinessHours,
+  })
+}
+
+export function trackFeatureUsage(feature: string) {
+  logInfo('Feature usage', {
+    component: 'FeatureTracking',
+    action: 'use',
+    feature,
+  })
+}
+```
+
+## 🔍 Debug Information
+
+### Development Logging
+```typescript
+// lib/debug.ts
+export function debugLog(message: string, data?: any) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[DEBUG] ${message}`, data)
+  }
+}
+
+// Usage in components
+export function DatabaseWakingUp({ children }: { children: React.ReactNode }) {
+  const [isWaking, setIsWaking] = useState(false)
+  
+  useEffect(() => {
+    debugLog('Database wake-up sequence started')
+    
+    const checkDatabase = async () => {
+      try {
+        await supabase.from('business_hours').select('id').limit(1)
+        debugLog('Database is responsive')
+        setIsWaking(false)
+      } catch (error) {
+        debugLog('Database still waking up', error)
+        setTimeout(checkDatabase, 2000)
+      }
+    }
+    
+    checkDatabase()
+  }, [])
+  
+  return isWaking ? <WakingUpSpinner /> : children
+}
+```
+
+## 📊 Monitoring Dashboard
+
+### Key Metrics to Track
+- **Error Rate**: < 1% of total requests
+- **Response Time**: < 2 seconds for page loads
+- **Database Queries**: < 500ms average
+- **Core Web Vitals**: All metrics in "Good" range
+- **User Journeys**: Form completion rates, booking success rates
+
+### Alert Thresholds
+```typescript
+// Configure in Sentry dashboard
+{
+  "error_rate": {
+    "threshold": "1%",
+    "timeframe": "5m"
+  },
+  "response_time": {
+    "threshold": "2s",
+    "percentile": "95th"
+  },
+  "database_query_time": {
+    "threshold": "500ms",
+    "percentile": "95th"
+  }
+}
+```
+
+## 🎯 Monitoring Checklist
+
+- [ ] Sentry configured for both client and server
+- [ ] Error boundaries implemented on all routes
+- [ ] Database queries include error handling and logging
+- [ ] Performance metrics tracked (Core Web Vitals)
+- [ ] User journey events logged
+- [ ] Business-specific metrics tracked
+- [ ] Alert thresholds configured
+- [ ] Debug logging available in development
+- [ ] Structured logging with consistent context
+
+- [ ] Business-specific metrics tracked
+- [ ] Alert thresholds configured
+- [ ] Debug logging available in development
+- [ ] Structured logging with consistent context

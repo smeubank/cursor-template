@@ -1,0 +1,347 @@
+---
+alwaysApply: true
+---
+
+# Common Patterns
+
+## 🗃️ Database Access Patterns
+
+### Database Client Pattern
+```typescript
+// src/lib/database.ts
+import { createClient } from '@supabase/supabase-js'
+
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+```
+
+### Server Component Data Fetching
+```typescript
+// app/page.tsx
+import { supabase } from '@/lib/database'
+
+export default async function Page() {
+  const { data, error } = await supabase
+    .from('business_hours')
+    .select('*')
+    .order('day_of_week')
+  
+  if (error) {
+    throw new Error(`Failed to fetch business hours: ${error.message}`)
+  }
+  
+  return <BusinessHours data={data} />
+}
+```
+
+### Database Sleep State Handling
+```typescript
+// components/DatabaseWakingUp.tsx
+export function DatabaseWakingUp({ children }: { children: React.ReactNode }) {
+  const [isWaking, setIsWaking] = useState(false)
+  
+  // Handle database wake-up logic
+  // Show loading state while database initializes
+  
+  return isWaking ? <WakingUpSpinner /> : children
+}
+```
+
+## 🎨 UI Component Patterns
+
+### ShadCN/UI Integration
+```typescript
+// components/ui/button.tsx
+import { cn } from '@/lib/utils'
+import { cva } from 'class-variance-authority'
+
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        brand: 'bg-brand-primary text-white hover:bg-brand-primary/90',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+)
+```
+
+### Form Validation Pattern
+```typescript
+// components/ContactForm.tsx
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const contactSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  message: z.string().min(10, 'Message must be at least 10 characters'),
+})
+
+export function ContactForm() {
+  const form = useForm<z.infer<typeof contactSchema>>({
+    resolver: zodResolver(contactSchema),
+  })
+  
+  const onSubmit = async (data: z.infer<typeof contactSchema>) => {
+    // Handle form submission with Sentry logging
+  }
+}
+```
+
+## 📊 Error Handling Patterns
+
+### Error Boundary Pattern
+```typescript
+// components/ErrorBoundary.tsx
+'use client'
+
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
+
+export default function ErrorBoundary({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: {
+        component: 'ErrorBoundary',
+        digest: error.digest,
+        errorType: 'react-error-boundary',
+      },
+    })
+  }, [error])
+
+  return (
+    <div className="p-4 border border-red-200 rounded-md">
+      <h2 className="text-red-600">Something went wrong!</h2>
+      <button onClick={reset} className="mt-2 text-sm text-blue-600">
+        Try again
+      </button>
+    </div>
+  )
+}
+```
+
+### Structured Error Logging
+```typescript
+// lib/logging.ts
+import * as Sentry from '@sentry/nextjs'
+
+export function logError(error: Error, context: Record<string, any>) {
+  Sentry.captureException(error, {
+    tags: {
+      component: context.component || 'unknown',
+      action: context.action || 'unknown',
+    },
+    extra: {
+      ...context,
+      timestamp: new Date().toISOString(),
+    },
+  })
+}
+```
+
+## 🔐 Authentication Patterns
+
+### Protected Route Pattern
+```typescript
+// app/admin/layout.tsx
+import { redirect } from 'next/navigation'
+import { supabase } from '@/lib/database'
+
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    redirect('/login')
+  }
+  
+  return <div className="admin-layout">{children}</div>
+}
+```
+
+### User Session Context
+```typescript
+// providers/AuthProvider.tsx
+'use client'
+
+import { createContext, useContext, useEffect, useState } from 'react'
+import { User } from '@supabase/supabase-js'
+import { supabase } from '@/lib/database'
+
+const AuthContext = createContext<{
+  user: User | null
+  loading: boolean
+}>({
+  user: null,
+  loading: true,
+})
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  return (
+    <AuthContext.Provider value={{ user, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export const useAuth = () => useContext(AuthContext)
+```
+
+## 📅 Business Logic Patterns
+
+### Business Hours Validation
+```typescript
+// lib/business-hours.ts
+export function isBusinessOpen(businessHours: BusinessHour[]): boolean {
+  const now = new Date()
+  const currentDay = now.getDay()
+  const currentTime = now.getHours() * 60 + now.getMinutes()
+  
+  const todayHours = businessHours.find(h => h.day_of_week === currentDay)
+  if (!todayHours || !todayHours.is_open) return false
+  
+  const openTime = timeToMinutes(todayHours.open_time)
+  const closeTime = timeToMinutes(todayHours.close_time)
+  
+  return currentTime >= openTime && currentTime <= closeTime
+}
+
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+```
+
+### Booking System Pattern
+```typescript
+// lib/booking.ts
+export async function createBooking(
+  booking: BookingRequest
+): Promise<BookingResponse> {
+  // Validate business hours
+  const businessHours = await getBusinessHours()
+  if (!isBusinessOpen(businessHours)) {
+    throw new Error('Booking outside business hours')
+  }
+  
+  // Create booking with database
+  const { data, error } = await supabase
+    .from('bookings')
+    .insert(booking)
+    .select()
+    .single()
+  
+  if (error) {
+    logError(error, { action: 'create_booking', booking })
+    throw error
+  }
+  
+  // Log successful booking
+  Sentry.addBreadcrumb({
+    message: 'Booking created successfully',
+    level: 'info',
+    data: { bookingId: data.id },
+  })
+  
+  return data
+}
+```
+
+## 📱 Responsive Design Patterns
+
+### Mobile-First Component
+```typescript
+// components/HeroSection.tsx
+export function HeroSection() {
+  return (
+    <section className="px-4 py-12 md:py-24 lg:py-32">
+      <div className="container mx-auto max-w-4xl">
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-center">
+          Welcome to [Your Business Name]
+        </h1>
+        <p className="mt-4 text-lg md:text-xl text-center text-muted-foreground">
+          [Your value proposition and brief description]
+        </p>
+      </div>
+    </section>
+  )
+}
+```
+
+## 🎯 Performance Patterns
+
+### Image Optimization
+```typescript
+// components/OptimizedImage.tsx
+import Image from 'next/image'
+
+export function OptimizedImage({ src, alt, className }: ImageProps) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={800}
+      height={600}
+      className={className}
+      priority={false}
+      placeholder="blur"
+      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A8A8A8A8A8A8A8A8A8A=="
+    />
+  )
+}
+```
+
+### Code Splitting Pattern
+```typescript
+// app/admin/dashboard/page.tsx
+import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
+
+const HeavyChart = dynamic(() => import('@/components/HeavyChart'), {
+  loading: () => <div>Loading chart...</div>,
+  ssr: false,
+})
+
+export default function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <Suspense fallback={<div>Loading...</div>}>
+        <HeavyChart />
+      </Suspense>
+    </div>
+  )
+}
+```
