@@ -1,3 +1,11 @@
+This has evolved into this:
+
+https://github.com/smeubank/ai-pattern-garden
+
+https://www.get-vibes.dev/
+
+The bootstrap for cursor rules is still a good idea, but it will be much easier to maintain once the above project is more fleshed out.
+
 # Cursor AI Assistant Rules Template
 
 A comprehensive template for configuring AI assistants in Cursor IDE with modern web development best practices.
